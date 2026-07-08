@@ -41,11 +41,11 @@ cfg <- list(
   output_dir      = "out/quality_gate",            # parquet parts written here
   overwrite_out   = TRUE,
 
-  ## ---- reference layers (paths to shapefiles / gpkg / parquet) -------------
-  state_path      = "ref/asgs_state.shp",          # STATE polygons
-  locality_path   = "ref/asgs_locality.shp",       # LOCALITY / suburb polygons
-  meshblock_path  = "ref/asgs_meshblock.shp",      # MESHBLOCK polygons (smallest)
-  roads_path      = "ref/roads_centrelines.shp",   # named road centrelines
+  ## ---- reference layers (GeoParquet from oracle_to_geoparquet.R, or shp/gpkg) --
+  state_path      = "ref/asgs_state.parquet",       # STATE polygons
+  locality_path   = "ref/asgs_locality.parquet",    # LOCALITY / suburb polygons
+  meshblock_path  = "ref/asgs_meshblock.parquet",   # MESHBLOCK polygons (smallest)
+  roads_path      = "ref/roads_centrelines.parquet",# named road centrelines
 
   ## name of the attribute holding the *name* in each reference layer
   state_name_col     = "STE_NAME",
@@ -124,8 +124,10 @@ jw_sim <- function(a, b, p = cfg$jw_p) {
 read_layer <- function(path) {
   ext <- tolower(tools::file_ext(path))
   if (ext == "parquet") {
-    df <- arrow::read_parquet(path)
-    sf::st_as_sf(df)          # assumes a geometry/wkb column
+    # GeoParquet (as written by oracle_to_geoparquet.R / sfarrow)
+    if (!requireNamespace("sfarrow", quietly = TRUE))
+      stop("Reading .parquet reference layers needs the 'sfarrow' package.")
+    sfarrow::st_read_parquet(path)
   } else {
     sf::st_read(path, quiet = TRUE)
   }
